@@ -40,6 +40,26 @@ const defaultCredentialsKey = "0123456789abcdef0123456789abcdef0123456789abcdef0
 const defaultAccessSecret = "patra_jwt_access_secret_super_secure_key_123456789";
 const defaultRefreshSecret = "patra_jwt_refresh_secret_super_secure_key_987654321";
 
+if (parsed.NODE_ENV === "production") {
+  const access = parsed.ACCESS_TOKEN_SECRET || parsed.JWT_ACCESS_SECRET || parsed.JWT_SECRET;
+  const refresh = parsed.REFRESH_TOKEN_SECRET || parsed.JWT_REFRESH_SECRET;
+  const encryption = parsed.CREDENTIALS_KEY || parsed.ENCRYPTION_KEY;
+
+  if (!access || !refresh || access.length < 32 || refresh.length < 32 ||
+      access === refresh || access === defaultAccessSecret || refresh === defaultRefreshSecret) {
+    throw new Error("Production requires distinct JWT secrets of at least 32 characters");
+  }
+  if (!encryption || !/^[a-f0-9]{64}$/i.test(encryption) || encryption === defaultCredentialsKey) {
+    throw new Error("Production requires a unique 64-character hexadecimal CREDENTIALS_KEY");
+  }
+  if (!parsed.MONGODB_URI || !process.env.REDIS_URL) {
+    throw new Error("Production requires explicit MONGODB_URI and REDIS_URL values");
+  }
+  if (process.env.USE_FAKE_TRANSPORT === "true") {
+    throw new Error("Fake transport is unavailable in production");
+  }
+}
+
 export const env = {
   PORT: parsed.PORT,
   NODE_ENV: parsed.NODE_ENV,
